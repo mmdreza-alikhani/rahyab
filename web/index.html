@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>رهیاب — کنسول توزیع سفر</title>
+<meta name="description" content="موتور توزیع نزدیک‌ترین راننده با ایندکس مکانی و تخصیص دسته‌ای بهینه." />
+<link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#console">
+      <span class="mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="M6 20V9.8A3.8 3.8 0 0 1 9.8 6h4.4A3.8 3.8 0 0 1 18 9.8V20" />
+          <circle cx="12" cy="12.4" r="2.1" />
+          <path d="M5 20h5M14 20h5" />
+        </svg>
+      </span>
+      <span class="brand-text">
+        <strong>رهیاب</strong>
+        <small>DISPATCH CONSOLE</small>
+      </span>
+    </a>
+
+    <nav class="nav">
+      <a href="#console" class="active">کنسول</a>
+      <a href="#how">الگوریتم</a>
+      <a href="#bench">بنچمارک</a>
+      <a href="#api">API</a>
+    </nav>
+
+    <div class="topbar-actions">
+      <span class="conn" id="conn"><i></i><span id="connLabel">اتصال زنده</span></span>
+      <button class="btn btn-ghost btn-sm" id="resetBtn">بازنشانی ناوگان</button>
+    </div>
+  </div>
+</header>
+
+<main class="page" id="console">
+
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">توزیع لحظه‌ای · تهران</p>
+      <h1>نزدیک‌ترین راننده، در کسری از ثانیه</h1>
+      <p class="lede">مبدا و مقصد را روی نقشه انتخاب کنید. موتور توزیع با ایندکس مکانی، مدل زمان رسیدن و تخصیص دسته‌ای، بهینه‌ترین راننده را پیدا می‌کند.</p>
+    </div>
+    <div class="head-stats">
+      <div class="stat"><span>در دسترس</span><strong id="statAvailable">—</strong></div>
+      <div class="stat"><span>در سفر</span><strong id="statOnTrip">—</strong></div>
+      <div class="stat"><span>زمان جست‌وجو</span><strong id="statSearch">—</strong><em>ms</em></div>
+      <div class="stat"><span>نرخ پذیرش</span><strong id="statAccept">—</strong><em>%</em></div>
+    </div>
+  </div>
+
+  <section class="console">
+    <aside class="panel">
+      <header class="panel-head">
+        <h2>درخواست سفر</h2>
+        <span class="badge" id="panelBadge">آماده</span>
+      </header>
+
+      <div class="fields">
+        <button class="field active" id="fieldPickup" data-field="pickup" type="button">
+          <span class="pin pickup-dot"></span>
+          <span class="field-body">
+            <small>مبدا</small>
+            <span class="field-value empty" id="pickupLabel">روی نقشه انتخاب کنید</span>
+          </span>
+        </button>
+        <span class="field-connector"></span>
+        <button class="field" id="fieldDropoff" data-field="dropoff" type="button">
+          <span class="pin dropoff-square"></span>
+          <span class="field-body">
+            <small>مقصد</small>
+            <span class="field-value empty" id="dropoffLabel">روی نقشه انتخاب کنید</span>
+          </span>
+        </button>
+      </div>
+
+      <div class="panel-actions">
+        <button class="btn btn-primary" id="requestBtn" disabled>درخواست راننده</button>
+        <button class="btn btn-ghost btn-sm" id="clearBtn">پاک کردن</button>
+      </div>
+
+      <div class="hint-row">
+        <span class="hint">برای جابه‌جایی نقشه بکشید؛ با اسکرول بزرگ‌نمایی کنید.</span>
+        <button class="link-btn" id="sampleBtn">نمونه تصادفی</button>
+      </div>
+
+      <div class="notice" id="notice" hidden></div>
+
+      <div class="flow" id="flow" hidden>
+        <div class="flow-head">
+          <span id="flowTitle">در حال جست‌وجو…</span>
+          <span class="mono" id="flowMeta"></span>
+        </div>
+        <div class="progress indeterminate" id="progress"><span></span></div>
+        <ol class="candidates" id="candidates"></ol>
+      </div>
+
+      <div class="offer" id="offerCard" hidden>
+        <div class="offer-head">
+          <div class="driver-avatar" id="offerAvatar">ر</div>
+          <div class="driver-main">
+            <strong id="offerName">—</strong>
+            <span id="offerCar">—</span>
+          </div>
+          <div class="offer-eta">
+            <strong id="offerEta">—</strong>
+            <small>دقیقه تا شما</small>
+          </div>
+        </div>
+        <div class="offer-meta">
+          <span class="plate" id="offerPlate">—</span>
+          <span class="rating">★ <b id="offerRating">—</b></span>
+          <span id="offerDistance">—</span>
+        </div>
+        <div class="offer-countdown"><span id="offerBar" style="width:100%"></span></div>
+        <div class="offer-actions">
+          <button class="btn btn-primary btn-sm" id="acceptBtn">پذیرش راننده</button>
+          <button class="btn btn-danger-ghost btn-sm" id="declineBtn">رد پیشنهاد</button>
+        </div>
+        <p class="offer-hint">پیشنهاد پس از <span id="ttlSec">۲۰</span> ثانیه منقضی می‌شود.</p>
+      </div>
+
+      <div class="trip" id="tripCard" hidden>
+        <div class="trip-top">
+          <span class="trip-badge" id="tripBadge">در سفر</span>
+          <span class="mono" id="tripId"></span>
+        </div>
+        <strong id="tripDriver">—</strong>
+        <span class="trip-sub" id="tripSub">—</span>
+        <div class="trip-progress"><span id="tripBar"></span></div>
+        <div class="trip-meta">
+          <span id="tripEta">—</span>
+          <span id="tripFare">—</span>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="section-title"><span>رویدادها</span><span class="mono" id="eventMeta">0 evt</span></div>
+        <ul class="log" id="log"></ul>
+      </div>
+
+      <div class="panel-section toggles">
+        <label><input type="checkbox" id="autoAccept" checked /> پذیرش خودکار راننده</label>
+        <label><input type="checkbox" id="autoDemand" /> تقاضای خودکار (شبیه‌سازی)</label>
+      </div>
+    </aside>
+
+    <div class="map-shell">
+      <canvas id="map"></canvas>
+
+      <div class="map-top">
+        <div class="map-title"><span class="live-dot"></span><span id="mapSubtitle">ناوگان زنده</span></div>
+        <div class="map-modes">
+          <button class="chip active" data-mode="pickup" type="button">انتخاب مبدا</button>
+          <button class="chip" data-mode="dropoff" type="button">انتخاب مقصد</button>
+        </div>
+      </div>
+
+      <div class="map-zoom">
+        <button id="zoomIn" type="button" aria-label="بزرگ‌نمایی">+</button>
+        <button id="zoomOut" type="button" aria-label="کوچک‌نمایی">−</button>
+      </div>
+
+      <div class="map-foot">
+        <div class="legend">
+          <span><i class="dot available"></i>در دسترس</span>
+          <span><i class="dot reserved"></i>در انتظار پاسخ</span>
+          <span><i class="dot on-trip"></i>در سفر</span>
+        </div>
+        <div class="scalebar"><span id="scaleLabel">۲ کیلومتر</span><i></i></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="how" id="how">
+    <div class="section-head">
+      <p class="eyebrow">الگوریتم</p>
+      <h2>سه مرحله تا رسیدن راننده</h2>
+      <p class="section-lede">هیچ‌کدام از این مراحل کل ناوگان را پیمایش نمی‌کند؛ با رشد شهر، هزینه هر درخواست تقریباً ثابت می‌ماند.</p>
+    </div>
+
+    <div class="steps">
+      <article>
+        <span class="step-num">۰۱ / INDEX</span>
+        <h3>ایندکس شبکه‌ای</h3>
+        <p>موقعیت رانندگان در خانه‌های ۴۵۰ متری نگهداری می‌شود. جست‌وجو از خانه مبدا شروع و حلقه‌به‌حلقه گسترده می‌شود و به‌محض اینکه k راننده نزدیک‌تر از مرز حلقه بعدی پیدا شد، متوقف می‌شود.</p>
+        <dl>
+          <div><dt>هزینه جست‌وجو</dt><dd>O(k · cells)</dd></div>
+          <div><dt>بدون اسکن ناوگان</dt><dd>~7.6 µs</dd></div>
+        </dl>
+      </article>
+
+      <article>
+        <span class="step-num">۰۲ / SCORE</span>
+        <h3>هزینه، نه فاصله</h3>
+        <p>برای هر جفت درخواست و راننده، زمان رسیدن با ضریب مسیر و ترافیک ساعتی محاسبه می‌شود؛ سپس امتیاز راننده، نرخ پذیرش، جهت حرکت و مدت انتظار او به ثانیه تبدیل و با هم جمع می‌شوند.</p>
+        <dl>
+          <div><dt>یکای مشترک</dt><dd>seconds</dd></div>
+          <div><dt>قابل تفسیر</dt><dd>per-term</dd></div>
+        </dl>
+      </article>
+
+      <article>
+        <span class="step-num">۰۳ / ASSIGN</span>
+        <h3>تخصیص دسته‌ای</h3>
+        <p>درخواست‌های یک پنجره ۲۶۰ میلی‌ثانیه‌ای با هم حل می‌شوند و الگوریتم مجارستانی مجموع هزینه‌ها را کمینه می‌کند؛ نه اینکه هر درخواست حریصانه بهترین راننده را بردارد.</p>
+        <dl>
+          <div><dt>بهینگی</dt><dd>global / batch</dd></div>
+          <div><dt>پیچیدگی</dt><dd>O(n³)</dd></div>
+        </dl>
+      </article>
+    </div>
+  </section>
+
+  <section class="bench" id="bench">
+    <div class="section-head">
+      <p class="eyebrow">بنچمارک</p>
+      <h2>اعداد اندازه‌گیری‌شده</h2>
+      <p class="section-lede">Go 1.26، پردازنده Core i5-1135G7، میانگین چند هزار اجرا با <span class="mono">go test -bench</span>. کد بنچمارک داخل مخزن است.</p>
+    </div>
+
+    <div class="bench-grid">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>سنجه</th>
+              <th>روش</th>
+              <th>نتیجه</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>جست‌وجوی ۱۸ راننده نزدیک — ۷۲ راننده در شهر</td>
+              <td>ایندکس شبکه‌ای</td>
+              <td class="num">12.2 µs</td>
+            </tr>
+            <tr>
+              <td>جست‌وجوی ۱۸ راننده نزدیک — ۲۰٬۰۰۰ راننده</td>
+              <td>ایندکس شبکه‌ای</td>
+              <td class="num">7.6 µs</td>
+            </tr>
+            <tr>
+              <td>همان جست‌وجو با بررسی تک‌تک رانندگان</td>
+              <td>اسکن خطی</td>
+              <td class="num">424.5 µs</td>
+            </tr>
+            <tr>
+              <td>تخصیص ۴۰ درخواست به ۶۰ راننده</td>
+              <td>الگوریتم مجارستانی</td>
+              <td class="num">176 µs</td>
+            </tr>
+            <tr>
+              <td>سرعت جست‌وجو نسبت به اسکن خطی</td>
+              <td>—</td>
+              <td class="num good">۵۵ برابر</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <aside class="note">
+        <h3>چرا تخصیص دسته‌ای؟</h3>
+        <p>روش حریصانه یک تطبیق «بیشینه» می‌سازد، نه ارزان‌ترین. اگر دو درخواست هم‌زمان به یک راننده نزدیک باشند، حریصانه آن را به اولی می‌دهد و دومی را با هزینه بالا به راننده دورتر می‌فرستد.</p>
+        <p>تابع هزینه همه ترجیحات بازار را به ثانیه تبدیل می‌کند تا جمع آن‌ها معنا داشته باشد:</p>
+        <p class="formula">cost = eta + (1 − acceptance)·190 + max(0, 4.9 − rating)·120 + heading − idle</p>
+        <p>الگوریتم مجارستانی روی ماتریس درخواست‌ها × رانندگان، مجموع این هزینه را کمینه می‌کند؛ همان چیزی که میانگین زمان انتظار را پایین می‌آورد.</p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="api" id="api">
+    <div class="section-head">
+      <p class="eyebrow">رابط برنامه‌نویسی</p>
+      <h2>همان موتور، از طریق HTTP</h2>
+      <p class="section-lede">کل کنسول روی همین چند مسیر سوار است؛ برای اتصال اپلیکیشن مسافر یا راننده چیز دیگری لازم نیست.</p>
+    </div>
+
+    <div class="api-grid">
+      <pre class="code"><code><span class="c"># ثبت درخواست سفر</span>
+curl -s http://localhost:8080/api/request \
+  -H <span class="s">'content-type: application/json'</span> \
+  -d <span class="s">'{"pickup":{"lat":35.7219,"lon":51.4215},
+       "dropoff":{"lat":35.7001,"lon":51.4450}}'</span>
+
+<span class="c"># پاسخ: شناسه درخواست</span>
+{<span class="k">"requestId"</span>: <span class="s">"req_41"</span>}
+
+<span class="c"># دنبال کردن رویدادها به‌صورت زنده</span>
+curl -N http://localhost:8080/api/events
+
+<span class="c">event: search.done</span>
+<span class="c">data: {"requestId":"req_41","cells":19,"ms":0.4, ...}</span>
+
+<span class="c">event: offer.created</span>
+<span class="c">data: {"etaSec":3.8,"driverName":"سعید کریمی", ...}</span></code></pre>
+
+      <ul class="endpoints">
+        <li><span class="method">GET</span><span class="path">/api/state</span><span class="desc">ناوگان، تنظیمات و سنجه‌های لحظه‌ای</span></li>
+        <li><span class="method post">POST</span><span class="path">/api/request</span><span class="desc">ثبت درخواست سفر با مبدا و مقصد</span></li>
+        <li><span class="method post">POST</span><span class="path">/api/offers/{id}/accept</span><span class="desc">پذیرش پیشنهاد توسط راننده</span></li>
+        <li><span class="method post">POST</span><span class="path">/api/offers/{id}/decline</span><span class="desc">رد پیشنهاد و بازگشت درخواست به صف</span></li>
+        <li><span class="method">GET</span><span class="path">/api/events</span><span class="desc">جریان SSE شامل جست‌وجو، پیشنهاد و سفر</span></li>
+        <li><span class="method">GET</span><span class="path">/api/stats</span><span class="desc">تعداد درخواست، تأخیر جست‌وجو و تخصیص</span></li>
+        <li><span class="method post">POST</span><span class="path">/api/reset</span><span class="desc">بازنشانی ناوگان شبیه‌سازی‌شده</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <span>رهیاب — سامانه توزیع سفر · نسخه ۱٫۴</span>
+    <span class="mono">Go 1.26 · stdlib only · no external services</span>
+  </footer>
+</main>
+
+<script src="/app.js"></script>
+</body>
+</html>
